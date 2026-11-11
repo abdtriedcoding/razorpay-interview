@@ -1,22 +1,53 @@
-import { useState } from 'react'
+import { type PaymentLinksApi, paymentLinksApi } from './api/paymentLinksApi'
+import { CreateLinkForm } from './components/CreateLinkForm'
+import { LinksDashboard } from './components/LinksDashboard'
+import { useNow } from './hooks/useNow'
+import { usePaymentLinks } from './hooks/usePaymentLinks'
 
-function App() {
-  const [count, setCount] = useState(0)
+interface AppProps {
+  /** Injectable for tests; defaults to the in-memory mock backend. */
+  api?: PaymentLinksApi
+}
+
+function App({ api = paymentLinksApi }: AppProps) {
+  const now = useNow()
+  const { links, loadState, retry, createLink, markPaid, loadSampleLinks } = usePaymentLinks(api)
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-6 bg-slate-50 p-4 text-slate-900">
-      <h1 className="text-3xl font-bold tracking-tight">Vite + React + TypeScript</h1>
-      <p className="text-slate-600">
-        Styled with Tailwind CSS, tested with Vitest, React Testing Library and Playwright.
-      </p>
-      <button
-        type="button"
-        className="rounded-lg bg-blue-600 px-4 py-2 font-medium text-white shadow hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-        onClick={() => setCount((c) => c + 1)}
+    <div className="min-h-screen bg-slate-50 text-slate-900">
+      <a
+        href="#links-heading"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-10 focus:rounded-lg focus:bg-white focus:px-4 focus:py-2 focus:shadow"
       >
-        Count is {count}
-      </button>
-    </main>
+        Skip to payment links
+      </a>
+
+      <header className="border-b border-slate-200 bg-white">
+        <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-4 sm:px-6">
+          <span aria-hidden="true" className="grid size-8 place-items-center rounded-lg bg-blue-600 text-sm font-bold text-white">
+            ₹
+          </span>
+          <div>
+            <h1 className="text-base font-semibold leading-tight">Payment Links</h1>
+            <p className="text-xs text-slate-500">Create and track links to collect payments</p>
+          </div>
+        </div>
+      </header>
+
+      <main className="mx-auto grid max-w-6xl gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)] lg:items-start lg:py-8">
+        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6 lg:sticky lg:top-6">
+          <CreateLinkForm now={now} onCreate={createLink} />
+        </div>
+        <LinksDashboard
+          links={links}
+          loadState={loadState}
+          now={now}
+          onRetry={retry}
+          onMarkPaid={markPaid}
+          onLoadSamples={loadSampleLinks}
+        />
+      </main>
+    </div>
   )
 }
 
