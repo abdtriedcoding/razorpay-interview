@@ -152,7 +152,7 @@ export function CreateLinkForm({ now, onCreate }: CreateLinkFormProps) {
         </p>
         <FieldError id={CONTACT_ERROR_ID} message={contactError} />
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
           <FormField id={FIELD_IDS.email} label="Email" error={visibleError('email')}>
             {(aria) => (
               <input
