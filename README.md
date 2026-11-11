@@ -4,6 +4,48 @@ A responsive merchant dashboard for creating payment links, recording full or pa
 
 There's no backend. Data lives in an in-memory mock API with a small simulated latency, and it's saved to `localStorage`, so links and payments survive a page reload.
 
+## Screenshots
+
+All screenshots come from a real Chromium run of the production build (`npm run screenshots`). Each step is checked with Playwright assertions before its screenshot is taken. The clock is frozen at 15 Jun 2026, 10:00 IST.
+
+### Loading and empty states
+| Loading | Empty dashboard | Filter with no matches |
+| --- | --- | --- |
+| ![Loading state](docs/screenshots/01-loading-state.png) | ![Empty state](docs/screenshots/02-empty-state.png) | ![Empty filter](docs/screenshots/08-filter-empty.png) |
+
+### Create a payment link
+| Required-field errors | Format errors | Minimum first payment above total |
+| --- | --- | --- |
+| ![Required errors](docs/screenshots/03-required-errors.png) | ![Format errors](docs/screenshots/04-format-errors.png) | ![Partial minimum error](docs/screenshots/05-partial-min-error.png) |
+
+| Valid form | Link created |
+| --- | --- |
+| ![Valid form](docs/screenshots/06-valid-form.png) | ![Link created](docs/screenshots/07-link-created.png) |
+
+### Record payments
+| Record payment form | Payment validation error | Partially paid: balances updated |
+| --- | --- | --- |
+| ![Record payment form](docs/screenshots/09-record-payment-form.png) | ![Payment error](docs/screenshots/10-payment-error.png) | ![Partially paid](docs/screenshots/11-partially-paid.png) |
+
+### Statuses and filters
+| All statuses | Active | Partially Paid |
+| --- | --- | --- |
+| ![All statuses](docs/screenshots/12-all-statuses.png) | ![Active filter](docs/screenshots/13-filter-active.png) | ![Partially Paid filter](docs/screenshots/14-filter-partially-paid.png) |
+
+| Paid | Expired | After page reload (persisted) |
+| --- | --- | --- |
+| ![Paid filter](docs/screenshots/15-filter-paid.png) | ![Expired filter](docs/screenshots/16-filter-expired.png) | ![After reload](docs/screenshots/17-after-reload.png) |
+
+### Keyboard accessibility
+| Skip link on first Tab | Filter changed by keyboard |
+| --- | --- |
+| ![Skip link](docs/screenshots/18-keyboard-skip-link.png) | ![Keyboard filter](docs/screenshots/19-keyboard-filter.png) |
+
+### Mobile (390px)
+| Form errors | Dashboard | Full page | Record payment |
+| --- | --- | --- | --- |
+| ![Mobile form errors](docs/screenshots/20-mobile-form-errors.png) | ![Mobile dashboard](docs/screenshots/21-mobile-dashboard.png) | ![Mobile full page](docs/screenshots/22-mobile-full-page.png) | ![Mobile record payment](docs/screenshots/23-mobile-record-payment.png) |
+
 ## Getting started
 
 ```bash
@@ -79,11 +121,7 @@ e2e/             Playwright specs
 
 ### Screenshot walkthrough
 
-`npm run screenshots` runs `e2e/walkthrough.shot.ts` in Chromium against the production build. The walkthrough covers loading, empty state, validation (including the minimum first payment), create, recording partial and full payments with their errors, automatic expiry, every filter, persistence after a reload, keyboard navigation and the mobile layout. It checks each step before saving a screenshot to [`docs/screenshots/`](docs/screenshots/). Time is frozen with `page.clock`, so the dates in the images are the same on every run. The walkthrough uses its own config (`playwright.screenshots.config.ts`), so `npm run test:e2e` doesn't run it.
-
-| All statuses (auto-expired link included) | Mobile |
-| --- | --- |
-| ![Dashboard with Active, Partially Paid, Paid and Expired links](docs/screenshots/12-all-statuses.png) | ![Mobile dashboard](docs/screenshots/21-mobile-dashboard.png) |
+`npm run screenshots` runs `e2e/walkthrough.shot.ts` in Chromium against the production build. The walkthrough covers loading, empty state, validation (including the minimum first payment), create, recording partial and full payments with their errors, automatic expiry, every filter, persistence after a reload, keyboard navigation and the mobile layout. It checks each step before saving a screenshot to [`docs/screenshots/`](docs/screenshots/). Time is frozen with `page.clock`, so the dates in the images are the same on every run. The walkthrough uses its own config (`playwright.screenshots.config.ts`), so `npm run test:e2e` doesn't run it. All 23 images are shown in [Screenshots](#screenshots).
 
 ### Troubleshooting (Windows)
 
