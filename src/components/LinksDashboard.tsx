@@ -1,4 +1,4 @@
-import { type ReactNode, useMemo, useState } from 'react'
+import { type ReactNode, useCallback, useMemo, useRef, useState } from 'react'
 import {
   type PaymentLink,
   STATUS_FILTERS,
@@ -15,7 +15,7 @@ interface LinksDashboardProps {
   loadState: LoadState
   now: number
   onRetry: () => void
-  onMarkPaid: (id: string) => Promise<void>
+  onRecordPayment: (id: string, amountPaise: number) => Promise<unknown>
   onLoadSamples: () => Promise<void>
 }
 
@@ -27,10 +27,12 @@ export function LinksDashboard({
   loadState,
   now,
   onRetry,
-  onMarkPaid,
+  onRecordPayment,
   onLoadSamples,
 }: LinksDashboardProps) {
   const [filter, setFilter] = useState<StatusFilter>('all')
+  const headingRef = useRef<HTMLHeadingElement>(null)
+  const focusHeading = useCallback(() => headingRef.current?.focus(), [])
 
   const counts = useMemo(() => countByStatus(links, now), [links, now])
   const visibleLinks = useMemo(
@@ -40,15 +42,15 @@ export function LinksDashboard({
   )
 
   return (
-    <section aria-labelledby="links-heading" className="space-y-4">
+    <section aria-labelledby="links-heading" className="min-w-0 space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h2 id="links-heading" tabIndex={-1} className="text-lg font-semibold text-slate-900 focus:outline-none">
+        <h2 id="links-heading" ref={headingRef} tabIndex={-1} className="text-lg font-semibold text-slate-900 focus:outline-none">
           Payment links
         </h2>
         <div
           role="group"
           aria-label="Filter by status"
-          className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1 sm:pb-0"
+          className="-m-1 flex min-w-0 gap-1 overflow-x-auto p-1"
         >
           {STATUS_FILTERS.map((option) => {
             const selected = filter === option
@@ -88,7 +90,7 @@ export function LinksDashboard({
         <ul className="space-y-3" aria-label={`${STATUS_LABELS[filter]} payment links`}>
           {visibleLinks.map((link) => (
             <li key={link.id}>
-              <LinkCard link={link} now={now} onMarkPaid={onMarkPaid} />
+              <LinkCard link={link} now={now} onRecordPayment={onRecordPayment} onFocusLost={focusHeading} />
             </li>
           ))}
         </ul>

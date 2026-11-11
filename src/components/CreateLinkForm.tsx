@@ -18,12 +18,21 @@ const FIELD_IDS: Record<keyof PaymentLinkFormValues, string> = {
   email: 'link-email',
   phone: 'link-phone',
   expiresAt: 'link-expires-at',
+  allowPartial: 'link-allow-partial',
+  minFirstPayment: 'link-min-first-payment',
 }
 const CONTACT_ERROR_ID = 'link-contact-error'
+const ALLOW_PARTIAL_HINT_ID = 'link-allow-partial-hint'
+
+/** Form fields edited through a text input (everything except the checkbox). */
+type TextField = {
+  [K in keyof PaymentLinkFormValues]: PaymentLinkFormValues[K] extends string ? K : never
+}[keyof PaymentLinkFormValues]
 
 /** Order in which the first invalid field receives focus after a failed submit. */
 const FOCUS_ORDER: [PaymentLinkFormField, string][] = [
   ['amount', FIELD_IDS.amount],
+  ['minFirstPayment', FIELD_IDS.minFirstPayment],
   ['description', FIELD_IDS.description],
   ['contact', FIELD_IDS.email],
   ['email', FIELD_IDS.email],
@@ -51,7 +60,7 @@ export function CreateLinkForm({ now, onCreate }: CreateLinkFormProps) {
   const contactError =
     submitAttempted || (touched.email && touched.phone) ? errors.contact : undefined
 
-  const bind = (field: keyof PaymentLinkFormValues) => ({
+  const bind = (field: TextField) => ({
     name: field,
     value: values[field],
     onChange: (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
@@ -116,6 +125,61 @@ export function CreateLinkForm({ now, onCreate }: CreateLinkFormProps) {
           </div>
         )}
       </FormField>
+
+      <div className="space-y-3">
+        <div className="flex items-start gap-2.5">
+          <input
+            id={FIELD_IDS.allowPartial}
+            name="allowPartial"
+            type="checkbox"
+            checked={values.allowPartial}
+            onChange={(e) => {
+              const allowPartial = e.target.checked
+              setValues((prev) => ({ ...prev, allowPartial }))
+            }}
+            aria-describedby={ALLOW_PARTIAL_HINT_ID}
+            className="mt-0.5 size-4 shrink-0 cursor-pointer rounded border-slate-300 accent-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+          />
+          <div>
+            <label htmlFor={FIELD_IDS.allowPartial} className="block cursor-pointer text-sm font-medium text-slate-700">
+              Allow partial payments
+            </label>
+            <p id={ALLOW_PARTIAL_HINT_ID} className="text-xs text-slate-500">
+              Let the customer pay in instalments.
+            </p>
+          </div>
+        </div>
+
+        {values.allowPartial && (
+          <div className="border-l-2 border-slate-200 pl-4">
+            <FormField
+              id={FIELD_IDS.minFirstPayment}
+              label="Minimum first payment (₹)"
+              required
+              error={visibleError('minFirstPayment')}
+              hint="Must be more than ₹0 and no more than the total"
+            >
+              {(aria) => (
+                <div className="relative">
+                  <span aria-hidden="true" className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-sm text-slate-500">
+                    ₹
+                  </span>
+                  <input
+                    {...aria}
+                    {...bind('minFirstPayment')}
+                    type="text"
+                    inputMode="decimal"
+                    autoComplete="off"
+                    required
+                    placeholder="0.00"
+                    className={`${inputClass} pl-7`}
+                  />
+                </div>
+              )}
+            </FormField>
+          </div>
+        )}
+      </div>
 
       <FormField
         id={FIELD_IDS.description}

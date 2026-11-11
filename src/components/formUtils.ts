@@ -5,3 +5,10 @@ export function describedBy(...ids: (string | false | undefined)[]): string | un
   const joined = ids.filter(Boolean).join(' ')
   return joined || undefined
 }
+
+/** 50000 -> "500", 25050 -> "250.50": a plain value for a rupee text input. */
+export function paiseToInputValue(paise: number): string {
+  const rupees = Math.floor(paise / 100)
+  const rest = paise % 100
+  return rest === 0 ? String(rupees) : `${rupees}.${String(rest).padStart(2, '0')}`
+}

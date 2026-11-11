@@ -11,7 +11,7 @@ interface AppProps {
 
 function App({ api = paymentLinksApi }: AppProps) {
   const now = useNow()
-  const { links, loadState, retry, createLink, markPaid, loadSampleLinks } = usePaymentLinks(api)
+  const { links, loadState, retry, createLink, recordPayment, loadSampleLinks } = usePaymentLinks(api)
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
@@ -43,7 +43,7 @@ function App({ api = paymentLinksApi }: AppProps) {
           loadState={loadState}
           now={now}
           onRetry={retry}
-          onMarkPaid={markPaid}
+          onRecordPayment={recordPayment}
           onLoadSamples={loadSampleLinks}
         />
       </main>
