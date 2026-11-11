@@ -57,6 +57,7 @@ e2e/             Playwright specs
 | `npm run test:coverage` | Run unit tests with V8 coverage                   |
 | `npm run test:e2e`      | Run Playwright E2E tests (builds + previews app)  |
 | `npm run test:e2e:ui`   | Open the Playwright UI runner                     |
+| `npm run screenshots`   | Browser walkthrough; writes `docs/screenshots/`   |
 
 ## Tests
 
@@ -64,6 +65,14 @@ e2e/             Playwright specs
 - `src/domain/paymentLink.test.ts`: status derivation (including the expiry boundary and the rule that paid links never expire), filtering and counts.
 - `src/App.test.tsx`: loading, empty and error/retry states; validation messages and focus; create; filter; mark as paid.
 - `e2e/payment-links.spec.ts`: two tests. The first is the create-then-filter happy path. The second checks automatic expiry using Playwright's clock.
+
+### Screenshot walkthrough
+
+`npm run screenshots` runs `e2e/walkthrough.shot.ts` in Chromium against the production build. The walkthrough covers loading, empty state, validation, create, mark as paid, automatic expiry, every filter, keyboard navigation and the mobile layout. It checks each step before saving a screenshot to [`docs/screenshots/`](docs/screenshots/). Time is frozen with `page.clock`, so the dates in the images are the same on every run. The walkthrough uses its own config (`playwright.screenshots.config.ts`), so `npm run test:e2e` doesn't run it.
+
+| All statuses (auto-expired link included) | Mobile |
+| --- | --- |
+| ![Dashboard with Active, Paid and Expired links](docs/screenshots/08-all-statuses.png) | ![Mobile dashboard](docs/screenshots/15-mobile-dashboard.png) |
 
 ### Troubleshooting (Windows)
 
