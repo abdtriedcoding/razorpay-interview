@@ -1,3 +1,4 @@
+import { formatAmount } from './format'
 import {
   type CreatePaymentLinkInput,
   DESCRIPTION_MAX_LENGTH,
@@ -12,6 +13,9 @@ export interface PaymentLinkFormValues {
   phone: string
   /** Value of a `datetime-local` input (`YYYY-MM-DDTHH:mm`, local time), or ''. */
   expiresAt: string
+  allowPartial: boolean
+  /** Only validated (and used) when allowPartial is true. */
+  minFirstPayment: string
 }
 
 export type PaymentLinkFormField = keyof PaymentLinkFormValues | 'contact'
@@ -23,6 +27,8 @@ export const EMPTY_FORM_VALUES: PaymentLinkFormValues = {
   email: '',
   phone: '',
   expiresAt: '',
+  allowPartial: false,
+  minFirstPayment: '',
 }
 
 const AMOUNT_PATTERN = /^\d+(\.\d+)?$/
@@ -48,14 +54,38 @@ export function normalizePhone(raw: string): string {
   return raw.replace(/[\s-]/g, '')
 }
 
-function validateAmount(raw: string): string | undefined {
-  if (raw.trim() === '') return 'Amount is required'
+type MoneyResult = { paise: number; error?: undefined } | { paise?: undefined; error: string }
+
+/**
+ * Shared parsing for any rupee amount field: required, numeric, max 2 decimals, > ₹0.
+ * `label` starts the error messages, e.g. "Amount" or "Payment amount".
+ */
+export function parseMoney(raw: string, label: string): MoneyResult {
+  if (raw.trim() === '') return { error: `${label} is required` }
   const cleaned = cleanAmount(raw)
-  if (!AMOUNT_PATTERN.test(cleaned)) return 'Enter a valid amount, e.g. 1500 or 1500.50'
+  if (!AMOUNT_PATTERN.test(cleaned)) return { error: 'Enter a valid amount, e.g. 1500 or 1500.50' }
   const paise = parseAmountToPaise(cleaned)
-  if (paise === null) return 'Amount can have at most 2 decimal places'
-  if (paise <= 0) return 'Amount must be greater than ₹0'
-  if (paise > MAX_AMOUNT_PAISE) return 'Amount cannot exceed ₹5,00,000'
+  if (paise === null) return { error: `${label} can have at most 2 decimal places` }
+  if (paise <= 0) return { error: `${label} must be greater than ₹0` }
+  return { paise }
+}
+
+function validateAmount(raw: string): string | undefined {
+  const result = parseMoney(raw, 'Amount')
+  if (result.error !== undefined) return result.error
+  if (result.paise > MAX_AMOUNT_PAISE) return 'Amount cannot exceed ₹5,00,000'
+  return undefined
+}
+
+function validateMinFirstPayment(values: PaymentLinkFormValues): string | undefined {
+  if (!values.allowPartial) return undefined
+  const result = parseMoney(values.minFirstPayment, 'Minimum first payment')
+  if (result.error !== undefined) return result.error
+  // Only compare against the total once the total itself is valid.
+  const total = validateAmount(values.amount) ? null : parseAmountToPaise(values.amount)
+  if (total !== null && result.paise > total) {
+    return `Minimum first payment cannot exceed the total amount of ${formatAmount(total)}`
+  }
   return undefined
 }
 
@@ -83,6 +113,9 @@ export function validatePaymentLinkForm(
 
   const amount = validateAmount(values.amount)
   if (amount) errors.amount = amount
+
+  const minFirstPayment = validateMinFirstPayment(values)
+  if (minFirstPayment) errors.minFirstPayment = minFirstPayment
 
   const description = validateDescription(values.description)
   if (description) errors.description = description
@@ -113,6 +146,12 @@ export function hasErrors(errors: PaymentLinkFormErrors): boolean {
 export function toCreateInput(values: PaymentLinkFormValues): CreatePaymentLinkInput {
   const amountPaise = parseAmountToPaise(values.amount)
   if (amountPaise === null) throw new Error('toCreateInput called with an invalid amount')
+  const minFirstPaymentPaise = values.allowPartial
+    ? parseAmountToPaise(values.minFirstPayment)
+    : null
+  if (values.allowPartial && minFirstPaymentPaise === null) {
+    throw new Error('toCreateInput called with an invalid minimum first payment')
+  }
   const email = values.email.trim()
   const phone = normalizePhone(values.phone.trim())
   return {
@@ -123,5 +162,7 @@ export function toCreateInput(values: PaymentLinkFormValues): CreatePaymentLinkI
       ...(phone && { phone }),
     },
     expiresAt: values.expiresAt ? new Date(values.expiresAt).toISOString() : null,
+    allowPartial: values.allowPartial,
+    minFirstPaymentPaise,
   }
 }

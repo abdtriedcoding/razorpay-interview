@@ -48,10 +48,11 @@ export function usePaymentLinks(api: PaymentLinksApi) {
     [api],
   )
 
-  const markPaid = useCallback(
-    async (id: string) => {
-      const updated = await api.markPaid(id)
+  const recordPayment = useCallback(
+    async (id: string, amountPaise: number) => {
+      const updated = await api.recordPayment(id, amountPaise)
       setLinks((prev) => prev.map((l) => (l.id === id ? updated : l)))
+      return updated
     },
     [api],
   )
@@ -60,5 +61,5 @@ export function usePaymentLinks(api: PaymentLinksApi) {
     setLinks(await api.loadSampleLinks())
   }, [api])
 
-  return { links, loadState, retry, createLink, markPaid, loadSampleLinks }
+  return { links, loadState, retry, createLink, recordPayment, loadSampleLinks }
 }

@@ -15,6 +15,8 @@ const valid: PaymentLinkFormValues = {
   email: 'priya@example.com',
   phone: '',
   expiresAt: '',
+  allowPartial: false,
+  minFirstPayment: '',
 }
 
 const validate = (overrides: Partial<PaymentLinkFormValues>) =>
@@ -116,6 +118,57 @@ describe('validatePaymentLinkForm', () => {
       expect(validate({ expiresAt: 'not-a-date' }).expiresAt).toBe('Enter a valid date and time')
     })
   })
+
+  describe('minimum first payment', () => {
+    const partial = (overrides: Partial<PaymentLinkFormValues>) =>
+      validate({ amount: '1500', allowPartial: true, ...overrides })
+
+    it('is ignored when partial payments are off, even if it is garbage', () => {
+      expect(validate({ allowPartial: false, minFirstPayment: 'abc' })).toEqual({})
+      expect(validate({ allowPartial: false, minFirstPayment: '999999' })).toEqual({})
+    })
+
+    it('is required when partial payments are on', () => {
+      expect(partial({ minFirstPayment: '' }).minFirstPayment).toBe(
+        'Minimum first payment is required',
+      )
+      expect(partial({ minFirstPayment: '   ' }).minFirstPayment).toBe(
+        'Minimum first payment is required',
+      )
+    })
+
+    it.each([
+      ['0', 'Minimum first payment must be greater than ₹0'],
+      ['0.00', 'Minimum first payment must be greater than ₹0'],
+      ['-100', 'Enter a valid amount, e.g. 1500 or 1500.50'],
+      ['abc', 'Enter a valid amount, e.g. 1500 or 1500.50'],
+      ['10.999', 'Minimum first payment can have at most 2 decimal places'],
+    ])('rejects %s', (minFirstPayment, message) => {
+      expect(partial({ minFirstPayment }).minFirstPayment).toBe(message)
+    })
+
+    it('accepts a value below the total', () => {
+      expect(partial({ minFirstPayment: '500.50' })).toEqual({})
+    })
+
+    it('accepts a value equal to the total', () => {
+      expect(partial({ minFirstPayment: '1,500.00' })).toEqual({})
+    })
+
+    it('rejects a value greater than the total, naming the formatted total', () => {
+      expect(partial({ minFirstPayment: '1500.01' }).minFirstPayment).toBe(
+        'Minimum first payment cannot exceed the total amount of ₹1,500.00',
+      )
+    })
+
+    it('is not compared against the total when the total itself is invalid', () => {
+      for (const amount of ['', 'abc', '0', '1000000']) {
+        const errors = partial({ amount, minFirstPayment: '999' })
+        expect(errors.amount).toBeDefined()
+        expect(errors.minFirstPayment).toBeUndefined()
+      }
+    })
+  })
 })
 
 describe('toCreateInput', () => {
@@ -127,13 +180,29 @@ describe('toCreateInput', () => {
         email: '',
         phone: '98765 43210',
         expiresAt: '2026-06-20T18:30',
+        allowPartial: false,
+        minFirstPayment: '',
       }),
     ).toEqual({
       amountPaise: 150050,
       description: 'Invoice #42',
       customer: { phone: '9876543210' },
       expiresAt: new Date('2026-06-20T18:30').toISOString(),
+      allowPartial: false,
+      minFirstPaymentPaise: null,
     })
+  })
+
+  it('sets minFirstPaymentPaise to null when partial payments are off, whatever was typed', () => {
+    const input = toCreateInput({ ...valid, allowPartial: false, minFirstPayment: '200' })
+    expect(input.allowPartial).toBe(false)
+    expect(input.minFirstPaymentPaise).toBeNull()
+  })
+
+  it('parses the minimum first payment into paise when partial payments are on', () => {
+    const input = toCreateInput({ ...valid, allowPartial: true, minFirstPayment: '1,000.25' })
+    expect(input.allowPartial).toBe(true)
+    expect(input.minFirstPaymentPaise).toBe(100_025)
   })
 
   it('converts to paise exactly, without floating point drift', () => {
